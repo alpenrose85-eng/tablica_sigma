@@ -46,19 +46,22 @@ def compute_k2(k1: float) -> float:
     return 220.5 / math.exp(-k1 * 14.698)
 
 
-def compute_tau_ost(sigma: float, temperature: float, G: int) -> float:
+def compute_tau_ost(sigma: float, temperature_c: float, G: int) -> float:
     """Solve for τ_ост from:
     σ = (k2 / 1.25) · exp(-k1 · T · (log10(τ_ост) - 2·log10(T) + 19.52) · 10^-3)
     where σ is the user-provided stress.
+
+    For this formula T is used in Kelvin.
     """
+    temperature_k = temperature_c + 273.15
     k1 = compute_k1(G)
     k2 = compute_k2(k1)
     sigma_ratio = sigma / (k2 / 1.25)
     if sigma_ratio <= 0:
         raise ValueError("Некорректное значение σ для расчёта τ_ост")
 
-    exponent_term = -math.log(sigma_ratio) / (k1 * temperature * 1e-3)
-    log_tau_ost = exponent_term + 2 * math.log10(temperature) - 19.52
+    exponent_term = -math.log(sigma_ratio) / (k1 * temperature_k * 1e-3)
+    log_tau_ost = exponent_term + 2 * math.log10(temperature_k) - 19.52
     return 10 ** log_tau_ost
 
 
@@ -112,7 +115,7 @@ $$T = 550 + 350\cdot\left(\frac{c_\sigma}{A(d_g)\cdot\tau^{p}}\right)^{1/m}$$
 
 **Дополнительный расчёт остаточного времени:**
 
-Здесь $\sigma$ — это **напряжение, которое вводит пользователь**.
+Здесь $\sigma$ — это **напряжение, которое вводит пользователь**, а в формуле для $\tau_{ост}$ температура $T$ подставляется в **Кельвинах**.
 
 $$\sigma = \frac{k_2}{1{,}25}\exp\left(-k_1 T\left(\log \tau_{\text{ост}} - 2\log T + 19{,}52\right)\cdot10^{-3}\right)$$
 
