@@ -67,7 +67,7 @@ def build_table(tau: float, c_sigma_list: list[float], sigma: float) -> pd.DataF
     parameter_rows = ["dg, мм"]
     for c in c_sigma_list:
         parameter_rows.append(f"T при c_σ = {c:.2f}%")
-        parameter_rows.append(f"τ_ост при c_σ = {c:.2f}%")
+        parameter_rows.append(f"τ_ост при c_σ = {c:.2f}% (×10⁵ ч)")
 
     data = {"Параметр": parameter_rows}
 
@@ -77,8 +77,10 @@ def build_table(tau: float, c_sigma_list: list[float], sigma: float) -> pd.DataF
         for c in c_sigma_list:
             temperature = compute_temperature(c, dg, tau)
             tau_ost = compute_tau_ost(sigma, temperature, G)
+            tau_ost_hours = round(tau_ost)
+            tau_ost_hundred_thousands = tau_ost_hours / 100000
             column_values.append(f"{temperature:.1f}")
-            column_values.append(f"{tau_ost:.2f}")
+            column_values.append(f"{tau_ost_hundred_thousands:.2f}")
         data[f"G = {G}"] = column_values
 
     return pd.DataFrame(data)
@@ -196,5 +198,5 @@ else:
     st.dataframe(df, use_container_width=True, hide_index=True)
     st.caption(
         f"τ = {tau:.2f} ч · σ = {sigma_input:.2f} МПа · p = {P} · m = {M} · "
-        "T в градусах Цельсия · dg в мм"
+        "T в градусах Цельсия · dg в мм · τ_ост в сотнях тысяч часов"
     )
