@@ -37,15 +37,20 @@ def compute_temperature(c_sigma: float, dg: float, tau: float) -> float:
 
 
 def build_table(tau: float, c_sigma_list: list[float]) -> pd.DataFrame:
-    rows = []
-    for G in range(3, 11):
+    grain_numbers = list(range(3, 11))
+    data = {
+        "Параметр": ["dg, мм", *[f"c_σ = {c:.2f}%" for c in c_sigma_list]]
+    }
+
+    for G in grain_numbers:
         dg = grain_size(G)
-        row = {"G (номер зерна)": G, "dg, мм": f"{dg:.3f}"}
+        column_values = [f"{dg:.3f}"]
         for c in c_sigma_list:
             T = compute_temperature(c, dg, tau)
-            row[f"c_σ = {c:.2f}%"] = f"{T:.1f}"
-        rows.append(row)
-    return pd.DataFrame(rows)
+            column_values.append(f"{T:.1f}")
+        data[f"G = {G}"] = column_values
+
+    return pd.DataFrame(data)
 
 
 # --- Streamlit UI ---
