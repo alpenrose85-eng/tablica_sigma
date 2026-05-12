@@ -82,7 +82,7 @@ def build_table(tau: float, c_sigma_list: list[float], sigma: float) -> pd.DataF
             tau_ost = compute_tau_ost(sigma, temperature, G)
             tau_ost_hours = round(tau_ost)
             tau_ost_hundred_thousands = tau_ost_hours / 100000
-            column_values.append(f"{temperature:.1f}")
+            column_values.append(f"{round(temperature):.0f}")
             column_values.append(f"{tau_ost_hundred_thousands:.2f}")
         data[f"G = {G}"] = column_values
 
