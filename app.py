@@ -36,18 +36,48 @@ def compute_temperature(c_sigma: float, dg: float, tau: float) -> float:
     return 550 + 350 * (c_sigma / (A * tau ** P)) ** (1 / M)
 
 
+def compute_k1(G: int) -> float:
+    """k1 = 0.002·G^3 - 0.0237·G^2 + 0.1007·G + 0.3419"""
+    return 0.002 * G ** 3 - 0.0237 * G ** 2 + 0.1007 * G + 0.3419
+
+
+def compute_k2(k1: float) -> float:
+    """k2 = 220.5 / exp(-k1 · 14.698)"""
+    return 220.5 / math.exp(-k1 * 14.698)
+
+
+def compute_tau_ost(c_sigma: float, temperature: float, G: int) -> float:
+    """Solve for τ_ост from:
+    σ = (k2 / 1.25) · exp(-k1 · T · (log10(τ_ост) - 2·log10(T) + 19.52) · 10^-3)
+    """
+    k1 = compute_k1(G)
+    k2 = compute_k2(k1)
+    sigma_ratio = c_sigma / (k2 / 1.25)
+    if sigma_ratio <= 0:
+        raise ValueError("Некорректное значение σ для расчёта τост")
+
+    exponent_term = -math.log(sigma_ratio) / (k1 * temperature * 1e-3)
+    log_tau_ost = exponent_term + 2 * math.log10(temperature) - 19.52
+    return 10 ** log_tau_ost
+
+
 def build_table(tau: float, c_sigma_list: list[float]) -> pd.DataFrame:
     grain_numbers = list(range(3, 11))
-    data = {
-        "Параметр": ["dg, мм", *[f"c_σ = {c:.2f}%" for c in c_sigma_list]]
-    }
+    parameter_rows = ["dg, мм"]
+    for c in c_sigma_list:
+        parameter_rows.append(f"T при c_σ = {c:.2f}%")
+        parameter_rows.append(f"τ_ост при c_σ = {c:.2f}%")
+
+    data = {"Параметр": parameter_rows}
 
     for G in grain_numbers:
         dg = grain_size(G)
         column_values = [f"{dg:.3f}"]
         for c in c_sigma_list:
-            T = compute_temperature(c, dg, tau)
-            column_values.append(f"{T:.1f}")
+            temperature = compute_temperature(c, dg, tau)
+            tau_ost = compute_tau_ost(c, temperature, G)
+            column_values.append(f"{temperature:.1f}")
+            column_values.append(f"{tau_ost:.2f}")
         data[f"G = {G}"] = column_values
 
     return pd.DataFrame(data)
@@ -76,6 +106,14 @@ $$c_\sigma = A(d_g)\cdot\tau^{p}\cdot\left(\frac{T-550}{350}\right)^{m}$$
 **Решение относительно температуры:**
 
 $$T = 550 + 350\cdot\left(\frac{c_\sigma}{A(d_g)\cdot\tau^{p}}\right)^{1/m}$$
+
+**Дополнительный расчёт остаточного времени:**
+
+$$\sigma = \frac{k_2}{1{,}25}\exp\left(-k_1 T\left(\log \tau_{\text{ост}} - 2\log T + 19{,}52\right)\cdot10^{-3}\right)$$
+
+$$k_1 = 0{,}002G^3 - 0{,}0237G^2 + 0{,}1007G + 0{,}3419$$
+
+$$k_2 = \frac{220{,}5}{\exp(-k_1\cdot14{,}698)}$$
 
 Размер зерна $d_g$ (мм) задаётся номером $G$ по ГОСТ/ASTM; для промежуточных номеров
 используется линейная интерполяция.
